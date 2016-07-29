@@ -1,30 +1,52 @@
 library(stargazer)
-	library(pROC)
-	library(pscl)
-
+library(pROC)
+library(pscl)
+options(digits = 2)
 source('Preprocess data file.r')
 metrics <- data.frame(AUC = 0,
 	AIC = 0)
 rownames(metrics) <- 'temp'
 
+	# 7/26/16: remove coffee and wc_sales_cat
+	modelCols <- c('WO', 'tenor_years_min1',  'sales_concent_cat', 'Depth.of.Management',
+		'gross_margin_cat', 'Financial.Flexibility', 'past_arrears', 'sales_growth_rank',  
+		'sales_growth_rank_sq', 'country_risk')
 
-	modelCols <- c('WO', 'Tenor_years',  'sales_concent_cat', 'Depth.of.Management',
-		'gross_margin_cat', 'Financial.Flexibility', 'past_arrears', 'wc_sales_cat',  
-		'Financial.Strat.Quality', 'coffee', 'country_risk')
+	# # on 6/22/16 (with coffee, wc_sales_cat) 'Financial.Strat.Quality',
+	# modelCols <- c('WO', 'tenor_years_min1', 'sales_concent_cat', 'Depth.of.Management',
+	# 	'gross_margin_cat',  'past_arrears', 'wc_sales_cat',  
+	# 	'Financial.Strat.Quality', 'coffee', 'country_risk')	
 
-
+# df.train$wc_sales_cat <- factor(df.train$wc_sales_cat)
 df.train <- df.train %>%
 mutate(FundedDebt = log(Current.portion.of.Root.Capital.long.term.debt +
 				Current.portion.of.long.term.debt + Root.Capital.long.term.debt + 
 				Long.term.debt ))
+# moved to Preprocess file
+# normalize <- function(x) {
+# 	norm <- ( x - min(x, na.rm = TRUE)) / (max(x, na.rm = TRUE) - min(x, na.rm = TRUE))
+# 	norm
+# }
+df.train$margin_sd_sc <- normalize(df.train$margin_sd)
+df.train$margin_sd_sc_sq <- df.train$margin_sd_sc^2
+# moved to Preprocess file
 
+# df.train$sales_prev_year <-  df.train$Sales / ( df.train$Sales_growth_t1 + 1)
+# df.train$sales_growth_nom <- log(
+# 	normalize(
+# 	 df.train$Sales - df.train$sales_prev_year
+# 	) + 0.0000001) # to avoid 0 value for log
+
+# df.train$Sales_growth_t1_sq <- df.train$Sales_growth_t1 ^ 2
+# df.train$sales_growth_rank <- rank(df.train$sales_growth_nom) / nrow(df.train)
+# df.train$sales_growth_rank_sq <- df.train$sales_growth_rank ^ 2 
 # df.train$DSCR_bin <- cut(df.train$DSCRadj, c(-Inf, -0.0001, 0.0001, 0.5, 1, Inf)) #ifelse(df.train$DSCRadj<0.5, 1, 0)
 
 
 # Model 1
 	modelCols1 <- c('WO',  'sales_concent_cat', 'Depth.of.Management',
-		'gross_margin_cat', 'Financial.Flexibility', 'past_arrears', 'wc_sales_cat',  
-		'Financial.Strat.Quality', 'coffee', 'country_risk')
+		'gross_margin_cat', 'Financial.Flexibility', 'past_arrears', 'sales_growth_rank',   
+		'sales_growth_rank_sq', 'country_risk')
 
 	df.train.model <- df.train[,names(df.train) %in% modelCols1]
 	glm1 <- glm(WO ~ ., data=df.train.model, family="binomial", na.action=na.exclude)
@@ -35,9 +57,9 @@ mutate(FundedDebt = log(Current.portion.of.Root.Capital.long.term.debt +
 	metrics$ommitted <- missing
 
 # Model 2
-	modelCols2 <- c('WO', 'Tenor_years',  'Depth.of.Management',
-		'gross_margin_cat', 'Financial.Flexibility', 'past_arrears', 'wc_sales_cat',  
-		'Financial.Strat.Quality', 'coffee', 'country_risk')
+	modelCols2 <- c('WO', 'tenor_years_min1',  'Depth.of.Management',
+		'gross_margin_cat', 'Financial.Flexibility', 'past_arrears', 'sales_growth_rank',   
+		'sales_growth_rank_sq', 'country_risk')
 
 	df.train.model <- df.train[,names(df.train) %in% modelCols2]
 	glm2 <- glm(WO ~ ., data=df.train.model, family="binomial", na.action=na.exclude)
@@ -48,9 +70,9 @@ mutate(FundedDebt = log(Current.portion.of.Root.Capital.long.term.debt +
 	metrics$ommitted[2] <- missing
 
 # Model 3
-	modelCols3 <- c('WO', 'Tenor_years',  'sales_concent_cat',
-		'gross_margin_cat', 'Financial.Flexibility', 'past_arrears', 'wc_sales_cat',  
-		'Financial.Strat.Quality', 'coffee', 'country_risk')
+	modelCols3 <- c('WO', 'tenor_years_min1',  'sales_concent_cat',
+		'gross_margin_cat', 'Financial.Flexibility', 'past_arrears', 'sales_growth_rank',   
+		'sales_growth_rank_sq', 'country_risk')
 	df.train.model <- df.train[,names(df.train) %in% modelCols3]
 	glm3 <- glm(WO ~ ., data=df.train.model, family="binomial", na.action=na.exclude)
 	roc <- roc(df.train$WO,predict(glm3, df.train, type="response"))
@@ -60,9 +82,9 @@ mutate(FundedDebt = log(Current.portion.of.Root.Capital.long.term.debt +
 	metrics$ommitted[3] <- missing
 	
 # Model 4
-	modelCols4 <- c('WO', 'Tenor_years',  'sales_concent_cat', 'Depth.of.Management',
-		'Financial.Flexibility', 'past_arrears', 'wc_sales_cat',  
-		'Financial.Strat.Quality', 'coffee', 'country_risk')
+	modelCols4 <- c('WO', 'tenor_years_min1',  'sales_concent_cat', 'Depth.of.Management',
+		'Financial.Flexibility', 'past_arrears', 'sales_growth_rank',   
+		'sales_growth_rank_sq', 'country_risk')
 
 	df.train.model <- df.train[,names(df.train) %in% modelCols4]
 	glm4 <- glm(WO ~ ., data=df.train.model, family="binomial", na.action=na.exclude)
@@ -74,9 +96,9 @@ mutate(FundedDebt = log(Current.portion.of.Root.Capital.long.term.debt +
 	
 # Model 5
 
-	modelCols5 <- c('WO', 'Tenor_years',  'sales_concent_cat', 'Depth.of.Management',
-		'gross_margin_cat', 'past_arrears', 'wc_sales_cat',  
-		'Financial.Strat.Quality', 'coffee', 'country_risk')
+	modelCols5 <- c('WO', 'tenor_years_min1',  'sales_concent_cat', 'Depth.of.Management',
+		'gross_margin_cat', 'past_arrears', 'sales_growth_rank',   
+		'sales_growth_rank_sq', 'country_risk')
 	df.train.model <- df.train[,names(df.train) %in% modelCols5]
 	glm5 <- glm(WO ~ ., data=df.train.model, family="binomial", na.action=na.exclude)
 	roc <- roc(df.train$WO,predict(glm5, df.train, type="response"))
@@ -86,9 +108,9 @@ mutate(FundedDebt = log(Current.portion.of.Root.Capital.long.term.debt +
 	metrics$ommitted[5] <- missing
 	
 # Model 6
-	modelCols6 <- c('WO', 'Tenor_years',  'sales_concent_cat', 'Depth.of.Management',
-		'gross_margin_cat', 'Financial.Flexibility', 'wc_sales_cat',  
-		'Financial.Strat.Quality', 'coffee', 'country_risk')
+	modelCols6 <- c('WO', 'tenor_years_min1',  'sales_concent_cat', 'Depth.of.Management',
+		'gross_margin_cat', 'Financial.Flexibility', 'sales_growth_rank',   
+		'sales_growth_rank_sq', 'country_risk')
 	df.train.model <- df.train[,names(df.train) %in% modelCols6]
 	glm6 <- glm(WO ~ ., data=df.train.model, family="binomial", na.action=na.exclude)
 	roc <- roc(df.train$WO,predict(glm6, df.train, type="response"))
@@ -98,9 +120,9 @@ mutate(FundedDebt = log(Current.portion.of.Root.Capital.long.term.debt +
 	metrics$ommitted[6] <- missing
 	
 # Model 7
-	modelCols7 <- c('WO', 'Tenor_years',  'sales_concent_cat', 'Depth.of.Management',
+	modelCols7 <- c('WO', 'tenor_years_min1',  'sales_concent_cat', 'Depth.of.Management',
 		'gross_margin_cat', 'Financial.Flexibility', 'past_arrears', 
-		'Financial.Strat.Quality', 'coffee', 'country_risk')
+		'sales_growth_rank', 'country_risk')
 	df.train.model <- df.train[,names(df.train) %in% modelCols7]
 	glm7 <- glm(WO ~ ., data=df.train.model, family="binomial", na.action=na.exclude)
 	roc <- roc(df.train$WO,predict(glm7, df.train, type="response"))
@@ -110,8 +132,9 @@ mutate(FundedDebt = log(Current.portion.of.Root.Capital.long.term.debt +
 	metrics$ommitted[7] <- missing
 	
 # Model 8
-	modelCols8 <- c('WO', 'Tenor_years',  'sales_concent_cat', 'Depth.of.Management',
-		'gross_margin_cat', 'Financial.Flexibility', 'past_arrears', 'wc_sales_cat' , 'coffee', 'country_risk'
+	modelCols8 <- c('WO', 'tenor_years_min1',  'sales_concent_cat', 'Depth.of.Management',
+		'gross_margin_cat', 'Financial.Flexibility', 'past_arrears', 'sales_growth_rank',  
+		'sales_growth_rank_sq'
 		)
 	df.train.model <- df.train[,names(df.train) %in% modelCols8]
 	glm8 <- glm(WO ~ ., data=df.train.model, family="binomial", na.action=na.exclude)
@@ -122,9 +145,9 @@ mutate(FundedDebt = log(Current.portion.of.Root.Capital.long.term.debt +
 	metrics$ommitted[8] <- missing
 	
 # Model 9
-	modelCols9 <- c('WO', 'Tenor_years',  'sales_concent_cat', 'Depth.of.Management',
-		'gross_margin_cat', 'Financial.Flexibility', 'past_arrears', 'wc_sales_cat',  
-		'Financial.Strat.Quality', 'coffee', 'country_risk')
+	modelCols9 <- c('WO', 'tenor_years_min1',  'sales_concent_cat', 'Depth.of.Management',
+		'gross_margin_cat', 'Financial.Flexibility', 'past_arrears',   
+		'sales_growth_rank_sq', 'country_risk')
 	df.train.model <- df.train[,names(df.train) %in% modelCols9]
 	glm9 <- glm(WO ~ ., data=df.train.model, family="binomial", na.action=na.exclude)
 	roc <- roc(df.train$WO,predict(glm9, df.train, type="response"))
@@ -134,9 +157,9 @@ mutate(FundedDebt = log(Current.portion.of.Root.Capital.long.term.debt +
 	metrics$ommitted[9] <- missing
 	
 # Model 10
-	modelCols10 <-  c('WO', 'Tenor_years',  'sales_concent_cat', 'Depth.of.Management',
-		'gross_margin_cat', 'Financial.Flexibility', 'past_arrears', 'wc_sales_cat',  
-		'Financial.Strat.Quality', 'country_risk')
+	modelCols10 <-  c('WO', 'tenor_years_min1',  'sales_concent_cat', 'Depth.of.Management',
+		'gross_margin_cat', 'Financial.Flexibility', 'past_arrears', 
+		'country_risk')
 
 	df.train.model <- df.train[,names(df.train) %in% modelCols10]
 	glm10 <- glm(WO ~ ., data=df.train.model, family="binomial", na.action=na.exclude)
@@ -147,21 +170,21 @@ mutate(FundedDebt = log(Current.portion.of.Root.Capital.long.term.debt +
 	metrics$ommitted[10] <- missing
 	
 # Model 11
-	modelCols11 <- c('WO', 'Tenor_years',  'sales_concent_cat', 'Depth.of.Management',
-		'gross_margin_cat', 'Financial.Flexibility', 'past_arrears', 'wc_sales_cat',  
-		'Financial.Strat.Quality', 'coffee')
+	modelCols11 <- c('WO', 'tenor_years_min1',  'sales_concent_cat', 'Depth.of.Management',
+		'gross_margin_cat', 'Financial.Flexibility', 'past_arrears', 'sales_growth_rank',   
+		'sales_growth_rank_sq', 'country_risk')
 	df.train.model <- df.train[,names(df.train) %in% modelCols11]
 	glm11 <- glm(WO ~ ., data=df.train.model, family="binomial", na.action=na.exclude)
 	roc <- roc(df.train$WO,predict(glm11, df.train, type="response"))
 	met_row <- c(roc$auc, glm11$aic)
 	metrics <- rbind(metrics, met_row)
 	missing <- setdiff(modelCols, modelCols11)
-	metrics$ommitted[11] <- missing
+	metrics$ommitted[11] <- 'none'
 	
 # #### Train final model on both test and training
 #   modelColsFinal <- c("WO", "Sales_log", "WorkingCapital_log",
 #                       "past_arrears",
-#                       "margin_sd","Depth.of.Management",
+#                       'sales_growth_rank', "Depth.of.Management",
 #                       "Loan.Type")
 #   # Train model on all inactive loans
 #   df.train.model <- df.train[,names(df.train) %in% modelColsFinal] 
@@ -181,13 +204,13 @@ rownames(metrics) <- c("Model 1", "Model 2", "Model 3", "Model 4", "Model 5", "M
 					t(metrics), type = "html",
                     ci = TRUE)
 	# metricTable <- stargazer(metrics)
-	write(compTable, file = "model_comparison_06.17.16.html", append = FALSE)
+	write(compTable, file = "model_comparison_07.28.16.html", append = FALSE)
 
 	# write(t(metrics), file = "model_comparison_06.17.16.html", append = TRUE)
 	# names(modelCols) <- 0:(length(modelCols)-1)
 	# write(modelCols[-1], file = "model_comparison_06.17.16.html", append = TRUE)
 
 	# write(metricTable, file = "model_comparisons_05.10.16.html", append = TRUE)
-	file.show("model_comparison_06.17.16.html")
+	file.show("model_comparison_07.28.16.html")
 
 

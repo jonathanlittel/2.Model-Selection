@@ -1,9 +1,9 @@
 	library('reshape2')
 
-	pr <- predict(glm.mod.all$finalModel, df.rap.inactive, type="response", se.fit = TRUE, level=.95)
+	pr <- predict(glm.mod.all$finalModel, df.rap, type="response", se.fit = TRUE, level=.95)
 	family <- family(glm.mod.all$finalModel) 
 
-	lower <- family$linkinv(pr$fit - qnorm(0.95) * pr$se.fit) 
+	# lower <- family$linkinv(pr$fit - qnorm(0.95) * pr$se.fit) 
 	# upper <- family$linkinv(pr$fit + qnorm(0.95) * pr$se.fit) 
 
 	ci <- 0.95 # 90% two tail 
@@ -18,28 +18,17 @@ dfp <- as.data.frame(cbind(pr$fit, lower, upper))
 
    dfp$n <- as.numeric(row.names(dfp))
 
-g <- ggplot(dfp, aes(x=n, y=pd)) + geom_errorbar(aes(ymin=lower, ymax=upper), width=.1) # , position=V1
+# g <- ggplot(dfp, aes(x=n, y=pd)) + geom_errorbar(aes(ymin=lower, ymax=upper), width=.1) # , position=V1
 
-g + 
-    geom_line(position=pd) +
-    geom_point(position=pd)
+# g + 
+#     geom_line(position=pd) +
+#     geom_point(position=pd)
 
 
 dfp_l <- melt(dfp, id="n")
 h <- ggplot(dfp_l, aes(n, value)) + 
-	geom_line(aes(colour=variable))  # aes(colour=variable)
-
-
-	+
+	geom_line(aes(colour=variable)) + # aes(colour=variable)
 	geom_line(aes(y=lower, coulor = 'orange')) +
 	geom_line(aes(y=upper, coulor = 'grey'))
 
-
-
-
-
-ggplot(tgc, aes(x=dose, y=len, colour=supp)) + 
-    geom_errorbar(aes(ymin=len-se, ymax=len+se), width=.1, position=pd) +
-    geom_line(position=pd) +
-    geom_point(position=pd)
-
+h

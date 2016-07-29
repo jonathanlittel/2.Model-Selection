@@ -4,16 +4,26 @@
 	require(dplyr)
 	require(caret)
 	require(scales)
+#-------------------------------------------
+# LOAD DATA
+#-----------------------
 # Load info for writeoffs and inactive since 12/31/15
 # Data is updated through about 4/30
-	wd <- "C:/Box Sync/Risk Appetite - Provisioning Project/Working Folders for RAP Modules/Risk Profile/PD Model/1.Dataset Cleaning and Prep/data"
+	wd <- paste("C:/Box Sync/Risk Appetite - Provisioning Project/Working Folders for RAP",
+	" Modules/Risk Profile/PD Model/1.Dataset Cleaning and Prep/data", sep = "")
 	setwd(wd)
 	filename <- "List of Write-offs.csv"
 	wo <- read.csv(filename, skip=1)
 	colnames(wo) <- c('LoanID', 'Actual_WOs', 'Manual_WOs','Tag' )
 
+# load data for general working capital loan typeof
+	filename <- 'Loan_Characteristics.csv'
+	gwc <- read.csv(filename)
+	gwc <- dplyr::select(gwc, LoanID = Loan.ID, ltgwc = LT.GWC_dd)
+
 # load data for country_risk
-	wd <- paste("C:/Box Sync/Risk Appetite - Provisioning Project/Working Folders for RAP Modules/Risk Profile/PD Model/",
+	wd <- paste("C:/Box Sync/Risk Appetite - Provisioning Project/Working Folders for RAP",
+	" Modules/Risk Profile/PD Model/",
 		"2.Model Selection/source", sep="")
 	setwd(wd)
 	filename <- "country_risk.csv"
@@ -22,19 +32,31 @@
 	cr_data$country_risk[cr_data$Country=="Swaziland"] <- 9
 
 # Load rap dataset and merge		
-	wd <- "C:/Box Sync/Risk Appetite - Provisioning Project/Working Folders for RAP Modules/Risk Profile/PD Model/3.Outputs"
+	wd <- paste("C:/Box Sync/Risk Appetite - Provisioning Project/Working Folders for RAP",
+	" Modules/Risk Profile/PD Model/3.Outputs", sep = "")
 	setwd(wd)
 	filename <-  "rap_data_Q4_15_05.24.16.csv"
-	df.rap <- read.csv(filename, header=TRUE, sep=",")
-	df.all <- df.rap # copy for 
+	df.fin <- read.csv(filename, header=TRUE, sep=",")
+	df2 <- merge(df.fin, cr_data, by='Country')
+	df3 <- merge(df2, gwc, by = 'LoanID')
+	df.rap <- df3
+
+#-------------------------------------------
+# CHECKS
+#-----------------------
 
 # Check that all have scores and merge in country risk scores
 	co_w_score <- levels(cr_data$Country)  # El Salvador, United Kingdom, United States
 	co_in_data <- levels(df.rap$Country)
 	setdiff(co_w_score, co_in_data)
 	setdiff(co_in_data, co_w_score)	
-	df.rap <- merge(df.rap, cr_data, by='Country')
-# Create growth variables
+	# if( length ( setdiff(co_w_score, co_in_data) ) > 0 ) stop("There's a score without a country")
+	if( length ( setdiff(co_in_data, co_w_score) ) > 0 ) stop("There's a country without a score")
+
+#-------------------------------------------
+# CREATE VARIABLES
+#-----------------------
+
 # Sales_growth_t1 is the YoY growth of the most recent year over the 2nd most recent,
 # t2 is the second most recent over the third most recent
 
@@ -182,8 +204,10 @@ table(sales_years$Years_Sales_by_account)
 
 # Merge in new WO	 		
 	df.rap <- subset(df.rap, last_year==1)
-	wd <- "C:/Box Sync/Risk Appetite - Provisioning Project/Working Folders for RAP Modules/Risk Profile/PD Model/2.Model Selection"
-	setwd(wd)
+	wd2 <- paste("C:/Box Sync/Risk Appetite - Provisioning Project/",
+		"Working Folders for RAP Modules/Risk Profile/PD Model/2.Model Selection/source",
+		sep = "")
+	setwd(wd2)
 	df.rap <- merge(df.rap, wo, by="LoanID")
 	# df.rap$interest_coverage <- as.numeric(df.rap$Interest.Coverage.)
 	df.rap$interest_coverage <- df.rap$EBITDA / df.rap$Interest.Expense
@@ -230,13 +254,26 @@ table(sales_years$Years_Sales_by_account)
 			ifelse(FundedDebtToEBITDA > 5 | FundedDebtToEBITDA <= 0, 1, 1 ))) %>%
 		mutate(fundedDebttoEBITDA_cat = as.factor(fundedDebttoEBITDA_cat))
 
-# rank all loans by sales growth in previous year, normalize
-  df.rap$sales_growth_rank <- rank(df.rap$sales_growth_nom) / nrow(df.rap)
+# rank all loans by sales growth in nominal terms in previous year, normalize
+	normalize <- function(x) {
+		norm <- ( x - min(x, na.rm = TRUE)) / (max(x, na.rm = TRUE) - min(x, na.rm = TRUE))
+		norm
+	}
+	df.rap$sales_prev_year <-  df.rap$Sales / ( df.rap$Sales_growth_t1 + 1)
+	df.rap$sales_growth_nom <- df.rap$Sales - df.rap$sales_prev_year
+	df.rap$sales_growth_rank <- rank(
+		log(
+			df.rap$Sales - df.rap$sales_prev_year + 0.0000001
+			) # to avoid 0 value for log. Also, if using rank it's unnessary to log
+			) / nrow(df.rap)
+
+  # df.rap$sales_growth_rank <- rank(df.rap$sales_growth_nom) / nrow(df.rap)
   df.rap$sales_growth_rank_sq <- df.rap$sales_growth_rank ^ 2 
 
-#####################################################
-#     Remove outliers and create categorical vars   #
-#####################################################
+#---------------------------------------------------------------
+#     Remove outliers and create categorical vars   
+#---------------------------
+
 	# create categorical for gross margin range, where it gets the highest (worst)
 		# score when either it's missing margin range (ie <2 years sales history) or
 		# it had negative margins in any year (6 of 29 WOs ~21%)
@@ -272,6 +309,7 @@ table(sales_years$Years_Sales_by_account)
 	  y
 	}
 
+	# impute missing values with median for columns in list
 	med_recodes <- 	modelCols <- c( 'Sales_log', 'sales_concent_cat', 'Depth.of.Management',
 		'gross_margin_cat', 'Financial.Flexibility', 'past_arrears', 'wc_sales_cat',  
 		'Financial.Strat.Quality')
@@ -294,16 +332,16 @@ table(sales_years$Years_Sales_by_account)
 
 # Create tenor with min of 1 year
 	df.rap$tenor_years_min1 <- ifelse(df.rap$Tenor_years<=1, 1, df.rap$Tenor_years)
+	df.rap$tenor_years_min1 <- ifelse(df.rap$ltgwc==1, 1, df.rap$tenor_years_min1)
 
 df.rap$wc_sales_cat <- ifelse(df.rap$Working.Capital<0, 1, 0)
 
 # Create data frame on loans that are no longer active (or written off)
 	df.rap.inactive <- filter(df.rap, active==0)
 
-#####################################################
-# Split data into training and test set             #
-# Important that this remains consistent throughout # 
-#####################################################
+#-----------------------------------------------------------
+# Split data into training and test set             
+#--------------------------------
 	set.seed(9)
 	# uniqueIDs <- unique(df.rap.inactive$LoanID)	 # old method - caret attempts to keep WO balanced
 	# sample_size <- floor(0.80 * length(uniqueIDs))
@@ -316,6 +354,5 @@ df.rap$wc_sales_cat <- ifelse(df.rap$Working.Capital<0, 1, 0)
 	# df.test <- df.rap.inactive[!df.rap.inactive$LoanID %in% LoanIDtrain,] 
 	df.train <- df.rap.inactive[trainIndex,]
 	df.test <- df.rap.inactive[-trainIndex,]
-
 
 # end 
