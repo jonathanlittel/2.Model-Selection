@@ -1,7 +1,7 @@
 library(stargazer)
 library(pROC)
 library(pscl)
-options(digits = 2)
+options(digits = 3)
 source('Preprocess data file.r')
 metrics <- data.frame(AUC = 0,
 	AIC = 0)
@@ -9,16 +9,16 @@ rownames(metrics) <- 'temp'
 
 	# 7/26/16: remove coffee and wc_sales_cat
 	modelCols <- c('WO', 'tenor_years_min1',  'sales_concent_cat', 'Depth.of.Management',
-		'gross_margin_cat', 'Financial.Flexibility', 'past_arrears', 'sales_growth_rank',  
-		'sales_growth_rank_sq', 'country_risk')
+		'gross_margin_cat', 'Financial.Flexibility', 'past_arrears', 'sales_growth_pct_rank',  
+		'sales_growth_none', 'country_risk')
 
 	# # on 6/22/16 (with coffee, wc_sales_cat) 'Financial.Strat.Quality',
 	# modelCols <- c('WO', 'tenor_years_min1', 'sales_concent_cat', 'Depth.of.Management',
 	# 	'gross_margin_cat',  'past_arrears', 'wc_sales_cat',  
 	# 	'Financial.Strat.Quality', 'coffee', 'country_risk')	
 
-# df.train$wc_sales_cat <- factor(df.train$wc_sales_cat)
-df.train <- df.train %>%
+# df.rap.inactive$wc_sales_cat <- factor(df.rap.inactive$wc_sales_cat)
+df.rap.inactive <- df.rap.inactive %>%
 mutate(FundedDebt = log(Current.portion.of.Root.Capital.long.term.debt +
 				Current.portion.of.long.term.debt + Root.Capital.long.term.debt + 
 				Long.term.debt ))
@@ -27,30 +27,30 @@ mutate(FundedDebt = log(Current.portion.of.Root.Capital.long.term.debt +
 # 	norm <- ( x - min(x, na.rm = TRUE)) / (max(x, na.rm = TRUE) - min(x, na.rm = TRUE))
 # 	norm
 # }
-df.train$margin_sd_sc <- normalize(df.train$margin_sd)
-df.train$margin_sd_sc_sq <- df.train$margin_sd_sc^2
+df.rap.inactive$margin_sd_sc <- normalize(df.rap.inactive$margin_sd)
+df.rap.inactive$margin_sd_sc_sq <- df.rap.inactive$margin_sd_sc^2
 # moved to Preprocess file
 
-# df.train$sales_prev_year <-  df.train$Sales / ( df.train$Sales_growth_t1 + 1)
-# df.train$sales_growth_nom <- log(
+# df.rap.inactive$sales_prev_year <-  df.rap.inactive$Sales / ( df.rap.inactive$Sales_growth_t1 + 1)
+# df.rap.inactive$sales_growth_nom <- log(
 # 	normalize(
-# 	 df.train$Sales - df.train$sales_prev_year
+# 	 df.rap.inactive$Sales - df.rap.inactive$sales_prev_year
 # 	) + 0.0000001) # to avoid 0 value for log
 
-# df.train$Sales_growth_t1_sq <- df.train$Sales_growth_t1 ^ 2
-# df.train$sales_growth_rank <- rank(df.train$sales_growth_nom) / nrow(df.train)
-# df.train$sales_growth_rank_sq <- df.train$sales_growth_rank ^ 2 
-# df.train$DSCR_bin <- cut(df.train$DSCRadj, c(-Inf, -0.0001, 0.0001, 0.5, 1, Inf)) #ifelse(df.train$DSCRadj<0.5, 1, 0)
+# df.rap.inactive$Sales_growth_t1_sq <- df.rap.inactive$Sales_growth_t1 ^ 2
+# df.rap.inactive$sales_growth_pct_rank <- rank(df.rap.inactive$sales_growth_nom) / nrow(df.rap.inactive)
+# df.rap.inactive$sales_growth_none <- df.rap.inactive$sales_growth_pct_rank ^ 2 
+# df.rap.inactive$DSCR_bin <- cut(df.rap.inactive$DSCRadj, c(-Inf, -0.0001, 0.0001, 0.5, 1, Inf)) #ifelse(df.rap.inactive$DSCRadj<0.5, 1, 0)
 
 
 # Model 1
 	modelCols1 <- c('WO',  'sales_concent_cat', 'Depth.of.Management',
-		'gross_margin_cat', 'Financial.Flexibility', 'past_arrears', 'sales_growth_rank',   
-		'sales_growth_rank_sq', 'country_risk')
+		'gross_margin_cat', 'Financial.Flexibility', 'past_arrears', 'sales_growth_pct_rank',   
+		'sales_growth_none', 'country_risk')
 
-	df.train.model <- df.train[,names(df.train) %in% modelCols1]
-	glm1 <- glm(WO ~ ., data=df.train.model, family="binomial", na.action=na.exclude)
-	roc <- roc(df.train$WO,predict(glm1, df.train, type="response"))
+	df.rap.inactive.model <- df.rap.inactive[,names(df.rap.inactive) %in% modelCols1]
+	glm1 <- glm(WO ~ ., data=df.rap.inactive.model, family="binomial", na.action=na.exclude)
+	roc <- roc(df.rap.inactive$WO,predict(glm1, df.rap.inactive, type="response"))
 	met_row <- c(roc$auc, glm1$aic)
 	metrics[1,] <- met_row
 	missing <- setdiff(modelCols, modelCols1)
@@ -58,12 +58,12 @@ df.train$margin_sd_sc_sq <- df.train$margin_sd_sc^2
 
 # Model 2
 	modelCols2 <- c('WO', 'tenor_years_min1',  'Depth.of.Management',
-		'gross_margin_cat', 'Financial.Flexibility', 'past_arrears', 'sales_growth_rank',   
-		'sales_growth_rank_sq', 'country_risk')
+		'gross_margin_cat', 'Financial.Flexibility', 'past_arrears', 'sales_growth_pct_rank',   
+		'sales_growth_none', 'country_risk')
 
-	df.train.model <- df.train[,names(df.train) %in% modelCols2]
-	glm2 <- glm(WO ~ ., data=df.train.model, family="binomial", na.action=na.exclude)
-	roc <- roc(df.train$WO,predict(glm2, df.train, type="response"))
+	df.rap.inactive.model <- df.rap.inactive[,names(df.rap.inactive) %in% modelCols2]
+	glm2 <- glm(WO ~ ., data=df.rap.inactive.model, family="binomial", na.action=na.exclude)
+	roc <- roc(df.rap.inactive$WO,predict(glm2, df.rap.inactive, type="response"))
 	met_row <- c(roc$auc, glm2$aic)
 	metrics <- rbind(metrics, met_row)
 	missing <- setdiff(modelCols, modelCols2)
@@ -71,11 +71,11 @@ df.train$margin_sd_sc_sq <- df.train$margin_sd_sc^2
 
 # Model 3
 	modelCols3 <- c('WO', 'tenor_years_min1',  'sales_concent_cat',
-		'gross_margin_cat', 'Financial.Flexibility', 'past_arrears', 'sales_growth_rank',   
-		'sales_growth_rank_sq', 'country_risk')
-	df.train.model <- df.train[,names(df.train) %in% modelCols3]
-	glm3 <- glm(WO ~ ., data=df.train.model, family="binomial", na.action=na.exclude)
-	roc <- roc(df.train$WO,predict(glm3, df.train, type="response"))
+		'gross_margin_cat', 'Financial.Flexibility', 'past_arrears', 'sales_growth_pct_rank',   
+		'sales_growth_none', 'country_risk')
+	df.rap.inactive.model <- df.rap.inactive[,names(df.rap.inactive) %in% modelCols3]
+	glm3 <- glm(WO ~ ., data=df.rap.inactive.model, family="binomial", na.action=na.exclude)
+	roc <- roc(df.rap.inactive$WO,predict(glm3, df.rap.inactive, type="response"))
 	met_row <- c(roc$auc, glm3$aic)
 	metrics <- rbind(metrics, met_row)
 	missing <- setdiff(modelCols, modelCols3)
@@ -83,12 +83,12 @@ df.train$margin_sd_sc_sq <- df.train$margin_sd_sc^2
 	
 # Model 4
 	modelCols4 <- c('WO', 'tenor_years_min1',  'sales_concent_cat', 'Depth.of.Management',
-		'Financial.Flexibility', 'past_arrears', 'sales_growth_rank',   
-		'sales_growth_rank_sq', 'country_risk')
+		'Financial.Flexibility', 'past_arrears', 'sales_growth_pct_rank',   
+		'sales_growth_none', 'country_risk')
 
-	df.train.model <- df.train[,names(df.train) %in% modelCols4]
-	glm4 <- glm(WO ~ ., data=df.train.model, family="binomial", na.action=na.exclude)
-	roc <- roc(df.train$WO,predict(glm4, df.train, type="response"))
+	df.rap.inactive.model <- df.rap.inactive[,names(df.rap.inactive) %in% modelCols4]
+	glm4 <- glm(WO ~ ., data=df.rap.inactive.model, family="binomial", na.action=na.exclude)
+	roc <- roc(df.rap.inactive$WO,predict(glm4, df.rap.inactive, type="response"))
 	met_row <- c(roc$auc, glm4$aic)
 	metrics <- rbind(metrics, met_row)
 	missing <- setdiff(modelCols, modelCols4)
@@ -97,11 +97,11 @@ df.train$margin_sd_sc_sq <- df.train$margin_sd_sc^2
 # Model 5
 
 	modelCols5 <- c('WO', 'tenor_years_min1',  'sales_concent_cat', 'Depth.of.Management',
-		'gross_margin_cat', 'past_arrears', 'sales_growth_rank',   
-		'sales_growth_rank_sq', 'country_risk')
-	df.train.model <- df.train[,names(df.train) %in% modelCols5]
-	glm5 <- glm(WO ~ ., data=df.train.model, family="binomial", na.action=na.exclude)
-	roc <- roc(df.train$WO,predict(glm5, df.train, type="response"))
+		'gross_margin_cat', 'past_arrears', 'sales_growth_pct_rank',   
+		'sales_growth_none', 'country_risk')
+	df.rap.inactive.model <- df.rap.inactive[,names(df.rap.inactive) %in% modelCols5]
+	glm5 <- glm(WO ~ ., data=df.rap.inactive.model, family="binomial", na.action=na.exclude)
+	roc <- roc(df.rap.inactive$WO,predict(glm5, df.rap.inactive, type="response"))
 	met_row <- c(roc$auc, glm5$aic)
 	metrics <- rbind(metrics, met_row)
 	missing <- setdiff(modelCols, modelCols5)
@@ -109,11 +109,11 @@ df.train$margin_sd_sc_sq <- df.train$margin_sd_sc^2
 	
 # Model 6
 	modelCols6 <- c('WO', 'tenor_years_min1',  'sales_concent_cat', 'Depth.of.Management',
-		'gross_margin_cat', 'Financial.Flexibility', 'sales_growth_rank',   
-		'sales_growth_rank_sq', 'country_risk')
-	df.train.model <- df.train[,names(df.train) %in% modelCols6]
-	glm6 <- glm(WO ~ ., data=df.train.model, family="binomial", na.action=na.exclude)
-	roc <- roc(df.train$WO,predict(glm6, df.train, type="response"))
+		'gross_margin_cat', 'Financial.Flexibility', 'sales_growth_pct_rank',   
+		'sales_growth_none', 'country_risk')
+	df.rap.inactive.model <- df.rap.inactive[,names(df.rap.inactive) %in% modelCols6]
+	glm6 <- glm(WO ~ ., data=df.rap.inactive.model, family="binomial", na.action=na.exclude)
+	roc <- roc(df.rap.inactive$WO,predict(glm6, df.rap.inactive, type="response"))
 	met_row <- c(roc$auc, glm6$aic)
 	metrics <- rbind(metrics, met_row)
 	missing <- setdiff(modelCols, modelCols6)
@@ -122,10 +122,10 @@ df.train$margin_sd_sc_sq <- df.train$margin_sd_sc^2
 # Model 7
 	modelCols7 <- c('WO', 'tenor_years_min1',  'sales_concent_cat', 'Depth.of.Management',
 		'gross_margin_cat', 'Financial.Flexibility', 'past_arrears', 
-		'sales_growth_rank', 'country_risk')
-	df.train.model <- df.train[,names(df.train) %in% modelCols7]
-	glm7 <- glm(WO ~ ., data=df.train.model, family="binomial", na.action=na.exclude)
-	roc <- roc(df.train$WO,predict(glm7, df.train, type="response"))
+		'sales_growth_pct_rank', 'country_risk')
+	df.rap.inactive.model <- df.rap.inactive[,names(df.rap.inactive) %in% modelCols7]
+	glm7 <- glm(WO ~ ., data=df.rap.inactive.model, family="binomial", na.action=na.exclude)
+	roc <- roc(df.rap.inactive$WO,predict(glm7, df.rap.inactive, type="response"))
 	met_row <- c(roc$auc, glm7$aic)
 	metrics <- rbind(metrics, met_row)
 	missing <- setdiff(modelCols, modelCols7)
@@ -133,12 +133,12 @@ df.train$margin_sd_sc_sq <- df.train$margin_sd_sc^2
 	
 # Model 8
 	modelCols8 <- c('WO', 'tenor_years_min1',  'sales_concent_cat', 'Depth.of.Management',
-		'gross_margin_cat', 'Financial.Flexibility', 'past_arrears', 'sales_growth_rank',  
-		'sales_growth_rank_sq'
+		'gross_margin_cat', 'Financial.Flexibility', 'past_arrears', 'sales_growth_pct_rank',  
+		'sales_growth_none'
 		)
-	df.train.model <- df.train[,names(df.train) %in% modelCols8]
-	glm8 <- glm(WO ~ ., data=df.train.model, family="binomial", na.action=na.exclude)
-	roc <- roc(df.train$WO,predict(glm8, df.train, type="response"))
+	df.rap.inactive.model <- df.rap.inactive[,names(df.rap.inactive) %in% modelCols8]
+	glm8 <- glm(WO ~ ., data=df.rap.inactive.model, family="binomial", na.action=na.exclude)
+	roc <- roc(df.rap.inactive$WO,predict(glm8, df.rap.inactive, type="response"))
 	met_row <- c(roc$auc, glm8$aic)
 	metrics <- rbind(metrics, met_row)
 	missing <- setdiff(modelCols, modelCols8)
@@ -147,10 +147,10 @@ df.train$margin_sd_sc_sq <- df.train$margin_sd_sc^2
 # Model 9
 	modelCols9 <- c('WO', 'tenor_years_min1',  'sales_concent_cat', 'Depth.of.Management',
 		'gross_margin_cat', 'Financial.Flexibility', 'past_arrears',   
-		'sales_growth_rank_sq', 'country_risk')
-	df.train.model <- df.train[,names(df.train) %in% modelCols9]
-	glm9 <- glm(WO ~ ., data=df.train.model, family="binomial", na.action=na.exclude)
-	roc <- roc(df.train$WO,predict(glm9, df.train, type="response"))
+		'sales_growth_none', 'country_risk')
+	df.rap.inactive.model <- df.rap.inactive[,names(df.rap.inactive) %in% modelCols9]
+	glm9 <- glm(WO ~ ., data=df.rap.inactive.model, family="binomial", na.action=na.exclude)
+	roc <- roc(df.rap.inactive$WO,predict(glm9, df.rap.inactive, type="response"))
 	met_row <- c(roc$auc, glm9$aic)
 	metrics <- rbind(metrics, met_row)
 	missing <- setdiff(modelCols, modelCols9)
@@ -161,9 +161,9 @@ df.train$margin_sd_sc_sq <- df.train$margin_sd_sc^2
 		'gross_margin_cat', 'Financial.Flexibility', 'past_arrears', 
 		'country_risk')
 
-	df.train.model <- df.train[,names(df.train) %in% modelCols10]
-	glm10 <- glm(WO ~ ., data=df.train.model, family="binomial", na.action=na.exclude)
-	roc <- roc(df.train$WO,predict(glm10, df.train, type="response"))
+	df.rap.inactive.model <- df.rap.inactive[,names(df.rap.inactive) %in% modelCols10]
+	glm10 <- glm(WO ~ ., data=df.rap.inactive.model, family="binomial", na.action=na.exclude)
+	roc <- roc(df.rap.inactive$WO,predict(glm10, df.rap.inactive, type="response"))
 	met_row <- c(roc$auc, glm10$aic)
 	metrics <- rbind(metrics, met_row)
 	missing <- setdiff(modelCols, modelCols10)
@@ -171,11 +171,11 @@ df.train$margin_sd_sc_sq <- df.train$margin_sd_sc^2
 	
 # Model 11
 	modelCols11 <- c('WO', 'tenor_years_min1',  'sales_concent_cat', 'Depth.of.Management',
-		'gross_margin_cat', 'Financial.Flexibility', 'past_arrears', 'sales_growth_rank',   
-		'sales_growth_rank_sq', 'country_risk')
-	df.train.model <- df.train[,names(df.train) %in% modelCols11]
-	glm11 <- glm(WO ~ ., data=df.train.model, family="binomial", na.action=na.exclude)
-	roc <- roc(df.train$WO,predict(glm11, df.train, type="response"))
+		'gross_margin_cat', 'Financial.Flexibility', 'past_arrears', 'sales_growth_pct_rank',   
+		'sales_growth_none', 'country_risk')
+	df.rap.inactive.model <- df.rap.inactive[,names(df.rap.inactive) %in% modelCols11]
+	glm11 <- glm(WO ~ ., data=df.rap.inactive.model, family="binomial", na.action=na.exclude)
+	roc <- roc(df.rap.inactive$WO,predict(glm11, df.rap.inactive, type="response"))
 	met_row <- c(roc$auc, glm11$aic)
 	metrics <- rbind(metrics, met_row)
 	missing <- setdiff(modelCols, modelCols11)
@@ -184,12 +184,12 @@ df.train$margin_sd_sc_sq <- df.train$margin_sd_sc^2
 # #### Train final model on both test and training
 #   modelColsFinal <- c("WO", "Sales_log", "WorkingCapital_log",
 #                       "past_arrears",
-#                       'sales_growth_rank', "Depth.of.Management",
+#                       'sales_growth_pct_rank', "Depth.of.Management",
 #                       "Loan.Type")
 #   # Train model on all inactive loans
-#   df.train.model <- df.train[,names(df.train) %in% modelColsFinal] 
-#   glmFinal <- glm(WO ~ ., data=df.train.model, family="binomial", na.action=na.exclude)
-# 	roc <- roc(df.train$WO,predict(glmFinal, df.train, type="response"))
+#   df.rap.inactive.model <- df.rap.inactive[,names(df.rap.inactive) %in% modelColsFinal] 
+#   glmFinal <- glm(WO ~ ., data=df.rap.inactive.model, family="binomial", na.action=na.exclude)
+# 	roc <- roc(df.rap.inactive$WO,predict(glmFinal, df.rap.inactive, type="response"))
 # 	met_row <- c(roc$auc, glmFinal$aic)
 # 	metrics <- rbind(metrics, met_row)
 
@@ -204,13 +204,13 @@ rownames(metrics) <- c("Model 1", "Model 2", "Model 3", "Model 4", "Model 5", "M
 					t(metrics), type = "html",
                     ci = TRUE)
 	# metricTable <- stargazer(metrics)
-	write(compTable, file = "model_comparison_07.28.16.html", append = FALSE)
+	write(compTable, file = "model_comparison_08.17.16.html", append = FALSE)
 
 	# write(t(metrics), file = "model_comparison_06.17.16.html", append = TRUE)
 	# names(modelCols) <- 0:(length(modelCols)-1)
 	# write(modelCols[-1], file = "model_comparison_06.17.16.html", append = TRUE)
 
 	# write(metricTable, file = "model_comparisons_05.10.16.html", append = TRUE)
-	file.show("model_comparison_07.28.16.html")
+	file.show("model_comparison_08.17.16.html")
 
 

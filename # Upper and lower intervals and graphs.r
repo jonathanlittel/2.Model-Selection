@@ -27,8 +27,8 @@ dfp <- as.data.frame(cbind(pr$fit, lower, upper))
 
 dfp_l <- melt(dfp, id="n")
 h <- ggplot(dfp_l, aes(n, value)) + 
-	geom_line(aes(colour=variable)) + # aes(colour=variable)
-	geom_line(aes(y=lower, coulor = 'orange')) +
-	geom_line(aes(y=upper, coulor = 'grey'))
+	geom_line(aes(colour=variable))  # aes(colour=variable)
+	# geom_line(aes(y=lower, coulor = 'orange')) +
+	# geom_line(aes(y=upper, coulor = 'grey'))
 
 h

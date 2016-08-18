@@ -9,9 +9,9 @@
 #-----------------------
 # Load info for writeoffs and inactive since 12/31/15
 # Data is updated through about 4/30
-	wd <- paste("C:/Box Sync/Risk Appetite - Provisioning Project/Working Folders for RAP",
+	data_wd <- paste("C:/Box Sync/Risk Appetite - Provisioning Project/Working Folders for RAP",
 	" Modules/Risk Profile/PD Model/1.Dataset Cleaning and Prep/data", sep = "")
-	setwd(wd)
+	setwd(data_wd)
 	filename <- "List of Write-offs.csv"
 	wo <- read.csv(filename, skip=1)
 	colnames(wo) <- c('LoanID', 'Actual_WOs', 'Manual_WOs','Tag' )
@@ -22,10 +22,10 @@
 	gwc <- dplyr::select(gwc, LoanID = Loan.ID, ltgwc = LT.GWC_dd)
 
 # load data for country_risk
-	wd <- paste("C:/Box Sync/Risk Appetite - Provisioning Project/Working Folders for RAP",
+	data_wd <- paste("C:/Box Sync/Risk Appetite - Provisioning Project/Working Folders for RAP",
 	" Modules/Risk Profile/PD Model/",
 		"2.Model Selection/source", sep="")
-	setwd(wd)
+	setwd(data_wd)
 	filename <- "country_risk.csv"
 	cr_data <- read.csv(filename)
 	# change Swaziland to 9
@@ -41,6 +41,7 @@
 	df3 <- merge(df2, gwc, by = 'LoanID')
 	df.rap <- df3
 
+  df.rap$Close.Date <- as.Date(df.rap$Close.Date, "%Y-%m-%d")
 #-------------------------------------------
 # CHECKS
 #-----------------------
@@ -202,6 +203,15 @@ table(sales_years$Years_Sales_by_account)
 	 df.rap$Revenue_growth[df.rap$Revenue_growth>10] <- 10	
 	 df.rap$Rev_growth_sq <- df.rap$Revenue_growth^2
 
+# nominal sales growth
+	df.rap <- df.rap %>%  
+	 	arrange(LoanID, Year) %>%
+	 	group_by(LoanID)      %>%
+	 	mutate(sales_growth_nom = Sales - lag(Sales,1, default=NA),
+	 		   sales_growth_pct = (Sales / lag(Sales, 1, default = NA) ) - 1 )  %>%
+	 	mutate(sales_growth_nom = replace(sales_growth_nom, is.infinite(sales_growth_nom), NA),
+	 		   sales_growth_pct = replace(sales_growth_pct, is.infinite(sales_growth_pct), NA))
+
 # Merge in new WO	 		
 	df.rap <- subset(df.rap, last_year==1)
 	wd2 <- paste("C:/Box Sync/Risk Appetite - Provisioning Project/",
@@ -259,16 +269,34 @@ table(sales_years$Years_Sales_by_account)
 		norm <- ( x - min(x, na.rm = TRUE)) / (max(x, na.rm = TRUE) - min(x, na.rm = TRUE))
 		norm
 	}
-	df.rap$sales_prev_year <-  df.rap$Sales / ( df.rap$Sales_growth_t1 + 1)
-	df.rap$sales_growth_nom <- df.rap$Sales - df.rap$sales_prev_year
-	df.rap$sales_growth_rank <- rank(
-		log(
-			df.rap$Sales - df.rap$sales_prev_year + 0.0000001
-			) # to avoid 0 value for log. Also, if using rank it's unnessary to log
-			) / nrow(df.rap)
 
-  # df.rap$sales_growth_rank <- rank(df.rap$sales_growth_nom) / nrow(df.rap)
-  df.rap$sales_growth_rank_sq <- df.rap$sales_growth_rank ^ 2 
+# create dummy for missing/low sales in prev year
+  df.rap$sales_growth_none   <- 0
+  df.rap$sales_growth_none[is.na(df.rap$sales_growth_pct)] <- 1
+  df.rap$sales_growth_none[df.rap$sales_growth_pct > 100] <- 1
+  
+  # df.rap$sales_growth_pct[df.rap$sales_growth_none == 1] <- median(df.rap$sales_growth_pct, na.rm = TRUE)
+
+	df.rap$sales_growth_rank <- rank(
+			# df.rap$Sales - df.rap$sales_prev_year
+			df.rap$sales_growth_nom, na.last = TRUE # FALSE means NAs are put first, to keep na: 'keep'
+					) / nrow(df.rap) * 100
+
+	df.rap$sales_growth_pct_rank <- rank(
+			# df.rap$Sales - df.rap$sales_prev_year
+			df.rap$sales_growth_pct, na.last = TRUE # FALSE means NAs are put first, to keep na: 'keep'
+					) / nrow(df.rap) * 100
+
+# replace with median
+  # df.rap$sales_growth_rank[is.na(df.rap$sales_growth_pct)] <- median(df.rap$sales_growth_rank)
+  # df.rap$sales_growth_pct_rank[is.na(df.rap$sales_growth_pct)] <- median(df.rap$sales_growth_pct_rank)
+  
+df.rap %>% arrange(sales_growth_rank) %>% select(Account.Name, Sales, sales_growth_nom, sales_growth_rank, sales_growth_pct) %>% tail()
+  # df.rap$sales_growth_rank <- rank(df.rap$sales_growth_pct) / nrow(df.rap)
+
+  df.rap$sales_growth_rank_sq <- df.rap$sales_growth_rank ^ 2
+  df.rap$sales_growth_pct_rank_sq <- df.rap$sales_growth_pct_rank ^ 2
+
 
 #---------------------------------------------------------------
 #     Remove outliers and create categorical vars   
@@ -303,6 +331,7 @@ table(sales_years$Years_Sales_by_account)
 
 	# Replace with median
 	replace_median <- function(x, na.rm = TRUE, ...) {
+	  if(class(x) != 'numeric') stop('item must be numeric')
 	  med <- median(x, na.rm=TRUE)
 	  y <- x
 	  y[is.na(x)] <- med
@@ -313,8 +342,11 @@ table(sales_years$Years_Sales_by_account)
 	med_recodes <- 	modelCols <- c( 'Sales_log', 'sales_concent_cat', 'Depth.of.Management',
 		'gross_margin_cat', 'Financial.Flexibility', 'past_arrears', 'wc_sales_cat',  
 		'Financial.Strat.Quality')
+	sapply(df.rap[,names(df.rap) %in% med_recodes], class)
 	for (i in med_recodes) {
-		df.rap[,i] <- replace_median(df.rap[,i])
+		print(i)
+		temp <- as.numeric(unlist(df.rap[,i]))
+		df.rap[,i] <- replace_median(temp)
 	}
 
 # Create a new variable for 'active' if a loan has been repaid or marked as a writeoff
@@ -335,6 +367,14 @@ table(sales_years$Years_Sales_by_account)
 	df.rap$tenor_years_min1 <- ifelse(df.rap$ltgwc==1, 1, df.rap$tenor_years_min1)
 
 df.rap$wc_sales_cat <- ifelse(df.rap$Working.Capital<0, 1, 0)
+
+#------------------------
+# add currency volatility
+root_wd <- paste("C:/Box Sync/Risk Appetite - Provisioning Project/Working Folders for RAP",
+	" Modules/Risk Profile/PD Model/",
+		"2.Model Selection/", sep="")
+	setwd(root_wd)
+# source('currency volatility.r')
 
 # Create data frame on loans that are no longer active (or written off)
 	df.rap.inactive <- filter(df.rap, active==0)
