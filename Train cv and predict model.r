@@ -81,35 +81,35 @@ df.rap.inactive$sales_growth_pct_rank_sq <- log(df.rap.inactive$sales_growth_pct
   metrics_new_mod["average",] <- apply(metrics_new_mod, 2, mean)
   metrics_new_mod
   
-# # Train a model on each of five folds using the risk rating glm model
-#      metrics_rr <- data.frame(
-#        AUC=0,
-#        AIC=0)
+# Train a model on each of five folds using the risk rating glm model
+     metrics_rr <- data.frame(
+       AUC=0,
+       AIC=0)
      
-#   modelColsrr <- c('WO', 'RiskRating')
-#     df.train.model <- df.rap.inactive[,names(df.rap.inactive) %in% modelColsrr]
+  modelColsrr <- c('WO', 'RiskRating')
+    df.train.model <- df.rap.inactive[,names(df.rap.inactive) %in% modelColsrr]
 
-#   for (i in 1:5) {
-#     f <- paste("Fold",i, sep="")
-#     fold_list <- get(f, folds)
-#     fold <- unlist(fold_list)
-#     df.trn <- df.train.model[-c(fold),]
-#     df.tst <- df.train.model[c(fold),]
-#     name <- paste('glmRR', i, sep="")
-#     glm <- glm(WO ~ ., data=df.trn, family="binomial", na.action=na.exclude)
-#     assign(name, glm)
-#     roc <- roc(df.tst$WO,predict(glm, df.tst, type="response"))
-#     met_row <- c(roc$auc, glm$aic)
-#     metrics_rr <- rbind(metrics_rr, met_row)
-#     pd <- predict(glm, df.tst, type='response')
-#     wo_cut <- as.factor(ifelse(pd>cutoff,"Writeoff","Non_Writeoff"))
-#     cm <- confusionMatrix(wo_cut, df.tst$WO, 
-#       positive="Writeoff")
-#     cm_name <- paste("cmRR", i, sep="")
-#     assign(cm_name, cm)
-#   }
-#   metrics_rr <- metrics_rr[-1,]
-#   metrics_rr["average",] <- apply(metrics_rr, 2, mean)
+  for (i in 1:5) {
+    f <- paste("Fold",i, sep="")
+    fold_list <- get(f, folds)
+    fold <- unlist(fold_list)
+    df.trn <- df.train.model[-c(fold),]
+    df.tst <- df.train.model[c(fold),]
+    name <- paste('glmRR', i, sep="")
+    glm <- glm(WO ~ ., data=df.trn, family="binomial", na.action=na.exclude)
+    assign(name, glm)
+    roc <- roc(df.tst$WO,predict(glm, df.tst, type="response"))
+    met_row <- c(roc$auc, glm$aic)
+    metrics_rr <- rbind(metrics_rr, met_row)
+    pd <- predict(glm, df.tst, type='response')
+    wo_cut <- as.factor(ifelse(pd>cutoff,"Writeoff","Non_Writeoff"))
+    cm <- confusionMatrix(wo_cut, df.tst$WO, 
+      positive="Writeoff")
+    cm_name <- paste("cmRR", i, sep="")
+    assign(cm_name, cm)
+  }
+  metrics_rr <- metrics_rr[-1,]
+  metrics_rr["average",] <- apply(metrics_rr, 2, mean)
 
 
 #--------------------------------------------------------
@@ -195,6 +195,8 @@ df.rap.inactive$sales_growth_pct_rank_sq <- log(df.rap.inactive$sales_growth_pct
    summary(glm.mod.all.train$pred)
    glm.mod.all.train$results$ROC  # print the cv AUC
 
+   pd <- predict(glm.mod.all.train, df.train, type="prob")[,2]
+   roc_train<- roc(df.train$WO, pd)
 #--------------------------------------------------------
 # SAVE OUTPUT
 #--------
@@ -276,9 +278,8 @@ df.rap.inactive$sales_growth_pct_rank_sq <- log(df.rap.inactive$sales_growth_pct
     pd_lower, pd_upper,
     Max_Risk_Category,
     Risk_Category, WO,
-    sales_growth_rank,
-    sales_growth_rank_sq,
-    Sales, sales_prev_year, sales_growth_nom
+    sales_growth_pct_rank,
+    Sales
     )
 
   sales_rank <- quantile(df.rap$sales_growth_nom, probs = seq(0, 1, by = 0.01), na.rm = TRUE)
@@ -296,6 +297,16 @@ df.rap.inactive$sales_growth_pct_rank_sq <- log(df.rap.inactive$sales_growth_pct
   file.show("pd_model_08.17.16.html")
 
 exp(coef(glm.mod.all$finalModel))
+
+rocs <- data.frame(roc_all$auc,
+  roc_train$auc,
+  roc_test$auc,
+  roc_rr$auc,
+  glm.mod.all.train$results$ROC,
+  glm.mod.all$results$ROC)
+# metrics_new_mod
+
+write.csv(t(rocs), 'rocs_08.17.16.csv')
 
 # miscellany:
 # #   require(MuMIn)

@@ -279,12 +279,12 @@ table(sales_years$Years_Sales_by_account)
 
 	df.rap$sales_growth_rank <- rank(
 			# df.rap$Sales - df.rap$sales_prev_year
-			df.rap$sales_growth_nom, na.last = TRUE # FALSE means NAs are put first, to keep na: 'keep'
+			df.rap$sales_growth_nom, na.last = FALSE # FALSE means NAs are put first, to keep na: 'keep'
 					) / nrow(df.rap) * 100
 
 	df.rap$sales_growth_pct_rank <- rank(
 			# df.rap$Sales - df.rap$sales_prev_year
-			df.rap$sales_growth_pct, na.last = TRUE # FALSE means NAs are put first, to keep na: 'keep'
+			df.rap$sales_growth_pct, na.last = FALSE # FALSE means NAs are put first, to keep na: 'keep'
 					) / nrow(df.rap) * 100
 
 # replace with median
