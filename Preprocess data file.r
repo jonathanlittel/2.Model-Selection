@@ -366,7 +366,7 @@ df.rap %>% arrange(sales_growth_rank) %>% select(Account.Name, Sales, sales_grow
 	df.rap$tenor_years_min1 <- ifelse(df.rap$Tenor_years<=1, 1, df.rap$Tenor_years)
 	df.rap$tenor_years_min1 <- ifelse(df.rap$ltgwc==1, 1, df.rap$tenor_years_min1)
 
-df.rap$wc_sales_cat <- ifelse(df.rap$Working.Capital<0, 1, 0)
+df.rap$neg_working_cap <- ifelse(df.rap$Working.Capital<0, 1, 0)
 
 #------------------------
 # add currency volatility

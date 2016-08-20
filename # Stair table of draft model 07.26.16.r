@@ -10,7 +10,7 @@ rownames(metrics) <- 'temp'
 	# 7/26/16: remove coffee and wc_sales_cat
 	modelCols <- c('WO', 'tenor_years_min1',  'sales_concent_cat', 'Depth.of.Management',
 		'gross_margin_cat', 'Financial.Flexibility', 'past_arrears', 'sales_growth_pct_rank',  
-		'sales_growth_none', 'country_risk')
+		'neg_working_cap', 'country_risk')
 
 	# # on 6/22/16 (with coffee, wc_sales_cat) 'Financial.Strat.Quality',
 	# modelCols <- c('WO', 'tenor_years_min1', 'sales_concent_cat', 'Depth.of.Management',
@@ -39,14 +39,14 @@ df.rap.inactive$margin_sd_sc_sq <- df.rap.inactive$margin_sd_sc^2
 
 # df.rap.inactive$Sales_growth_t1_sq <- df.rap.inactive$Sales_growth_t1 ^ 2
 # df.rap.inactive$sales_growth_pct_rank <- rank(df.rap.inactive$sales_growth_nom) / nrow(df.rap.inactive)
-# df.rap.inactive$sales_growth_none <- df.rap.inactive$sales_growth_pct_rank ^ 2 
+# df.rap.inactive$ !!! <- df.rap.inactive$sales_growth_pct_rank ^ 2 
 # df.rap.inactive$DSCR_bin <- cut(df.rap.inactive$DSCRadj, c(-Inf, -0.0001, 0.0001, 0.5, 1, Inf)) #ifelse(df.rap.inactive$DSCRadj<0.5, 1, 0)
 
 
 # Model 1
 	modelCols1 <- c('WO',  'sales_concent_cat', 'Depth.of.Management',
 		'gross_margin_cat', 'Financial.Flexibility', 'past_arrears', 'sales_growth_pct_rank',   
-		'sales_growth_none', 'country_risk')
+		'neg_working_cap', 'country_risk')
 
 	df.rap.inactive.model <- df.rap.inactive[,names(df.rap.inactive) %in% modelCols1]
 	glm1 <- glm(WO ~ ., data=df.rap.inactive.model, family="binomial", na.action=na.exclude)
@@ -59,7 +59,7 @@ df.rap.inactive$margin_sd_sc_sq <- df.rap.inactive$margin_sd_sc^2
 # Model 2
 	modelCols2 <- c('WO', 'tenor_years_min1',  'Depth.of.Management',
 		'gross_margin_cat', 'Financial.Flexibility', 'past_arrears', 'sales_growth_pct_rank',   
-		'sales_growth_none', 'country_risk')
+		'neg_working_cap', 'country_risk')
 
 	df.rap.inactive.model <- df.rap.inactive[,names(df.rap.inactive) %in% modelCols2]
 	glm2 <- glm(WO ~ ., data=df.rap.inactive.model, family="binomial", na.action=na.exclude)
@@ -72,7 +72,7 @@ df.rap.inactive$margin_sd_sc_sq <- df.rap.inactive$margin_sd_sc^2
 # Model 3
 	modelCols3 <- c('WO', 'tenor_years_min1',  'sales_concent_cat',
 		'gross_margin_cat', 'Financial.Flexibility', 'past_arrears', 'sales_growth_pct_rank',   
-		'sales_growth_none', 'country_risk')
+		'neg_working_cap', 'country_risk')
 	df.rap.inactive.model <- df.rap.inactive[,names(df.rap.inactive) %in% modelCols3]
 	glm3 <- glm(WO ~ ., data=df.rap.inactive.model, family="binomial", na.action=na.exclude)
 	roc <- roc(df.rap.inactive$WO,predict(glm3, df.rap.inactive, type="response"))
@@ -84,7 +84,7 @@ df.rap.inactive$margin_sd_sc_sq <- df.rap.inactive$margin_sd_sc^2
 # Model 4
 	modelCols4 <- c('WO', 'tenor_years_min1',  'sales_concent_cat', 'Depth.of.Management',
 		'Financial.Flexibility', 'past_arrears', 'sales_growth_pct_rank',   
-		'sales_growth_none', 'country_risk')
+		'neg_working_cap', 'country_risk')
 
 	df.rap.inactive.model <- df.rap.inactive[,names(df.rap.inactive) %in% modelCols4]
 	glm4 <- glm(WO ~ ., data=df.rap.inactive.model, family="binomial", na.action=na.exclude)
@@ -98,7 +98,7 @@ df.rap.inactive$margin_sd_sc_sq <- df.rap.inactive$margin_sd_sc^2
 
 	modelCols5 <- c('WO', 'tenor_years_min1',  'sales_concent_cat', 'Depth.of.Management',
 		'gross_margin_cat', 'past_arrears', 'sales_growth_pct_rank',   
-		'sales_growth_none', 'country_risk')
+		'neg_working_cap', 'country_risk')
 	df.rap.inactive.model <- df.rap.inactive[,names(df.rap.inactive) %in% modelCols5]
 	glm5 <- glm(WO ~ ., data=df.rap.inactive.model, family="binomial", na.action=na.exclude)
 	roc <- roc(df.rap.inactive$WO,predict(glm5, df.rap.inactive, type="response"))
@@ -110,7 +110,7 @@ df.rap.inactive$margin_sd_sc_sq <- df.rap.inactive$margin_sd_sc^2
 # Model 6
 	modelCols6 <- c('WO', 'tenor_years_min1',  'sales_concent_cat', 'Depth.of.Management',
 		'gross_margin_cat', 'Financial.Flexibility', 'sales_growth_pct_rank',   
-		'sales_growth_none', 'country_risk')
+		'neg_working_cap', 'country_risk')
 	df.rap.inactive.model <- df.rap.inactive[,names(df.rap.inactive) %in% modelCols6]
 	glm6 <- glm(WO ~ ., data=df.rap.inactive.model, family="binomial", na.action=na.exclude)
 	roc <- roc(df.rap.inactive$WO,predict(glm6, df.rap.inactive, type="response"))
@@ -134,7 +134,7 @@ df.rap.inactive$margin_sd_sc_sq <- df.rap.inactive$margin_sd_sc^2
 # Model 8
 	modelCols8 <- c('WO', 'tenor_years_min1',  'sales_concent_cat', 'Depth.of.Management',
 		'gross_margin_cat', 'Financial.Flexibility', 'past_arrears', 'sales_growth_pct_rank',  
-		'sales_growth_none'
+		'neg_working_cap'
 		)
 	df.rap.inactive.model <- df.rap.inactive[,names(df.rap.inactive) %in% modelCols8]
 	glm8 <- glm(WO ~ ., data=df.rap.inactive.model, family="binomial", na.action=na.exclude)
@@ -147,7 +147,7 @@ df.rap.inactive$margin_sd_sc_sq <- df.rap.inactive$margin_sd_sc^2
 # Model 9
 	modelCols9 <- c('WO', 'tenor_years_min1',  'sales_concent_cat', 'Depth.of.Management',
 		'gross_margin_cat', 'Financial.Flexibility', 'past_arrears',   
-		'sales_growth_none', 'country_risk')
+		'neg_working_cap', 'country_risk')
 	df.rap.inactive.model <- df.rap.inactive[,names(df.rap.inactive) %in% modelCols9]
 	glm9 <- glm(WO ~ ., data=df.rap.inactive.model, family="binomial", na.action=na.exclude)
 	roc <- roc(df.rap.inactive$WO,predict(glm9, df.rap.inactive, type="response"))
@@ -158,7 +158,7 @@ df.rap.inactive$margin_sd_sc_sq <- df.rap.inactive$margin_sd_sc^2
 	
 # Model 10
 	modelCols10 <-  c('WO', 'tenor_years_min1',  'sales_concent_cat', 'Depth.of.Management',
-		'gross_margin_cat', 'Financial.Flexibility', 'past_arrears', 
+		'gross_margin_cat', 'Financial.Flexibility', 'past_arrears', 'sales_growth_pct_rank',  
 		'country_risk')
 
 	df.rap.inactive.model <- df.rap.inactive[,names(df.rap.inactive) %in% modelCols10]
@@ -172,7 +172,7 @@ df.rap.inactive$margin_sd_sc_sq <- df.rap.inactive$margin_sd_sc^2
 # Model 11
 	modelCols11 <- c('WO', 'tenor_years_min1',  'sales_concent_cat', 'Depth.of.Management',
 		'gross_margin_cat', 'Financial.Flexibility', 'past_arrears', 'sales_growth_pct_rank',   
-		'sales_growth_none', 'country_risk')
+		'neg_working_cap', 'country_risk')
 	df.rap.inactive.model <- df.rap.inactive[,names(df.rap.inactive) %in% modelCols11]
 	glm11 <- glm(WO ~ ., data=df.rap.inactive.model, family="binomial", na.action=na.exclude)
 	roc <- roc(df.rap.inactive$WO,predict(glm11, df.rap.inactive, type="response"))
@@ -204,13 +204,13 @@ rownames(metrics) <- c("Model 1", "Model 2", "Model 3", "Model 4", "Model 5", "M
 					t(metrics), type = "html",
                     ci = TRUE)
 	# metricTable <- stargazer(metrics)
-	write(compTable, file = "model_comparison_08.17.16.html", append = FALSE)
+	write(compTable, file = "model_comparison_08.19.16.html", append = FALSE)
 
 	# write(t(metrics), file = "model_comparison_06.17.16.html", append = TRUE)
 	# names(modelCols) <- 0:(length(modelCols)-1)
 	# write(modelCols[-1], file = "model_comparison_06.17.16.html", append = TRUE)
 
 	# write(metricTable, file = "model_comparisons_05.10.16.html", append = TRUE)
-	file.show("model_comparison_08.17.16.html")
+	file.show("model_comparison_08.19.16.html")
 
 

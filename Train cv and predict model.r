@@ -282,7 +282,7 @@ df.rap.inactive$sales_growth_pct_rank_sq <- log(df.rap.inactive$sales_growth_pct
     Sales
     )
 
-  sales_rank <- quantile(df.rap$sales_growth_nom, probs = seq(0, 1, by = 0.01), na.rm = TRUE)
+  sales_rank <- quantile(df.rap$sales_growth_pct, probs = seq(0, 1, by = 0.01), na.rm = TRUE)
   write.csv(sales_rank, 'sales_growth_rank_table.csv')
   write.csv(df.out, 'pds_08.17.16.csv')
   write.csv(c, 'pd_model_coefs.08.17.17.csv')
