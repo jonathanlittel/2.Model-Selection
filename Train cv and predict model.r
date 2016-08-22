@@ -30,6 +30,7 @@
      metrics_new_mod <- data.frame(
        AUC=0,
        AIC=0)
+  # 8/19/16: add neg_working_cap (previously called wc_sales_cat)
   # 7/26/16: remove coffee and wc_sales_cat and 'Financial.Strat.Quality'
   modelCols <- c('WO', 'tenor_years_min1',  'sales_concent_cat', 'Depth.of.Management',
     'gross_margin_cat', 'Financial.Strat.Quality', 'past_arrears', 
@@ -39,6 +40,7 @@
     # 'sales_growth_rank_sq', 
     # 'Financial.Flexibility',   # predictive but removed
     # 'coffee',                  # predictive but removed
+    'neg_working_cap',              
     'sales_growth_pct_rank',     # note that NAs and high growth are replaced with the median - analysis & models suggested neg risk..
     # 'sales_growth_none',         # see above - gave negative coef
     # 'sales_growth_pct_rank_sq',
@@ -250,9 +252,9 @@ df.rap.inactive$sales_growth_pct_rank_sq <- log(df.rap.inactive$sales_growth_pct
 # Save each glm
   glm_five <- list(glm1, glm2, glm3, glm4, glm5)
   glm_five_rr <- list(glmRR1, glmRR2, glmRR3, glmRR4, glmRR5)
-  saveRDS(glm_five, 'glms_pd_model_08.17.16.rds')
-  saveRDS(glm_five, 'glms_rr_model_08.17.16.rds')
-  saveRDS(glm.mod.all, 'glm_model_08.17.16.rds')
+  saveRDS(glm_five, 'glms_pd_model_08.19.16.rds')
+  saveRDS(glm_five, 'glms_rr_model_08.19.16.rds')
+  saveRDS(glm.mod.all, 'glm_model_08.19.16.rds')
 
   c <- coef(glm.mod.all$finalModel)
   c_rr <- coef(glm.rr)
@@ -269,32 +271,42 @@ df.rap.inactive$sales_growth_pct_rank_sq <- log(df.rap.inactive$sales_growth_pct
   #   Risk_Category, WO)
 
   df.out <- dplyr::select(df.rap, LoanID, Account.Name, RC.Opp.Number,
-    Close.Date, Maturity.at.Origination, tenor_years_min1,
-    Sales.Concentration.to.a.Single.Buyer, Depth.of.Management, Gross_Margin_range,
-    coffee, past_arrears, Working.Capital, Sales, working_capital_to_sales,
-    Financial.Strat.Quality, country_risk, sales_concent_cat, wc_sales_cat,
-    gross_margin_cat,
-    active,  pd,  pd_one_year, pd_multiple_years,
-    pd_lower, pd_upper,
+    active,  
+    Close.Date, Maturity.at.Origination, 
+    Sales.Concentration.to.a.Single.Buyer, 
+    Gross_Margin_range,
+    coffee,  Working.Capital, Sales, working_capital_to_sales,
     Max_Risk_Category,
     Risk_Category, WO,
+    sales_growth_pct,
+    Sales,
+    Depth.of.Management,
+    Financial.Strat.Quality,
+    past_arrears,
+    country_risk,
+    sales_concent_cat,
     sales_growth_pct_rank,
-    Sales
+    gross_margin_cat,
+    tenor_years_min1,
+    neg_working_cap,
+    pd,  pd_one_year, pd_multiple_years,
+    pd_lower, pd_upper
     )
 
-  sales_rank <- quantile(df.rap$sales_growth_pct, probs = seq(0, 1, by = 0.01), na.rm = TRUE)
+  sales_rank <- quantile(df.rap$sales_growth_pct, probs = seq(0, 1, by = 0.01), na.rm = TRUE) * 100
   write.csv(sales_rank, 'sales_growth_rank_table.csv')
-  write.csv(df.out, 'pds_08.17.16.csv')
-  write.csv(c, 'pd_model_coefs.08.17.17.csv')
+  write.csv(df.out, 'pds_08.19.16.csv', row.names = FALSE)
+  write.csv(c, 'pd_model_coefs.08.19.17.csv', row.names = FALSE)
 
   nice_output <- tbl_df(coef(glm.mod.all$finalModel))
-  rownames(nice_output) <- names(coef(glm.mod.all$finalModel))
+  nice_output$coefficient <- names(coef(glm.mod.all$finalModel))
   model_out <- stargazer(t(nice_output), type = "html",
                     ci = TRUE)
+
   options(digits = 5)
-  write("PD Model Coefficients Q2 2016", file = "pd_model_08.17.16.html", append = FALSE)  
-  write(model_out, file = "pd_model_08.17.16.html", append = TRUE)
-  file.show("pd_model_08.17.16.html")
+  write("PD Model Coefficients Q2 2016", file = "pd_model_08.19.16.html", append = FALSE)  
+  write(model_out, file = "pd_model_08.19.16.html", append = TRUE)
+  file.show("pd_model_08.19.16.html")
 
 exp(coef(glm.mod.all$finalModel))
 
@@ -306,7 +318,8 @@ rocs <- data.frame(roc_all$auc,
   glm.mod.all$results$ROC)
 # metrics_new_mod
 
-write.csv(t(rocs), 'rocs_08.17.16.csv')
+write.csv(t(rocs), 'rocs_08.19.16.csv', row.names = FALSE)
+write.csv(nice_output, 'coefficients_08.19.16.csv', row.names = FALSE)
 
 # miscellany:
 # #   require(MuMIn)
