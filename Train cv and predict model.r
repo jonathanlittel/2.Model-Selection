@@ -290,12 +290,13 @@ df.rap.inactive$sales_growth_pct_rank_sq <- log(df.rap.inactive$sales_growth_pct
     tenor_years_min1,
     neg_working_cap,
     pd,  pd_one_year, pd_multiple_years,
-    pd_lower, pd_upper
+    pd_lower, pd_upper,
+    ltgwc
     )
 
   sales_rank <- quantile(df.rap$sales_growth_pct, probs = seq(0, 1, by = 0.01), na.rm = TRUE) * 100
   write.csv(sales_rank, 'sales_growth_rank_table.csv')
-  write.csv(df.out, 'pds_08.19.16.csv', row.names = FALSE)
+  write.csv(df.out, 'pds_08.19.16_unadjusted.csv', row.names = FALSE)
   write.csv(c, 'pd_model_coefs.08.19.17.csv', row.names = FALSE)
 
   nice_output <- tbl_df(coef(glm.mod.all$finalModel))

@@ -291,7 +291,7 @@ table(sales_years$Years_Sales_by_account)
   # df.rap$sales_growth_rank[is.na(df.rap$sales_growth_pct)] <- median(df.rap$sales_growth_rank)
   # df.rap$sales_growth_pct_rank[is.na(df.rap$sales_growth_pct)] <- median(df.rap$sales_growth_pct_rank)
   
-df.rap %>% arrange(sales_growth_rank) %>% select(Account.Name, Sales, sales_growth_nom, sales_growth_rank, sales_growth_pct) %>% tail()
+df.rap %>% arrange(sales_growth_rank) %>% dplyr::select(Account.Name, Sales, sales_growth_nom, sales_growth_rank, sales_growth_pct) %>% tail()
   # df.rap$sales_growth_rank <- rank(df.rap$sales_growth_pct) / nrow(df.rap)
 
   df.rap$sales_growth_rank_sq <- df.rap$sales_growth_rank ^ 2

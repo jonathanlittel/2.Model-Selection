@@ -2,9 +2,9 @@
 library(readr)
 library(dplyr)
 
-wd <- "C:/Box Sync/Risk Appetite - Provisioning Project/Working Folders for RAP Modules/Risk Profile/PD Model/3.Outputs"
+wd <- "C:/Box Sync/Risk Appetite - Provisioning Project/Working Folders for RAP Modules/Risk Profile/PD Model/2.Model Selection/outputs/final 08.19.16"
 setwd(wd)
-filename <-  "pds_08.19.16.csv" 
+filename <-  "pds_08.19.16_unadjusted.csv" 
 df.rap <- read_csv(filename)
 
 # add adjustments for
@@ -28,20 +28,25 @@ df.rap <- df.rap %>%
                              ifelse(working_capital_to_sales >= 0.4 & working_capital_to_sales <= 1, 0,
                                     ifelse( working_capital_to_sales > 1, 0.01,
                       NA))))))),
-    wc_sales_adj <- replace(wc_sales_adj, is.na(working_capital_to_sales), 0.01),
+    wc_sales_adj = replace(wc_sales_adj, is.na(working_capital_to_sales), 0.01),
     pd_temp = pd_temp + wc_sales_adj,
     pd_temp = replace(pd_temp, pd_temp > 0.4, 0.4),
     pd_temp = replace(pd_temp, pd_temp < 0.015, 0.015),
     pd_new  = 1 - (1 - pd_temp ) ^ tenor_years_min1,
-    pd_temp <- NULL
+    pd_adjusted_pre_tenor = pd_temp,
+    pd_temp = NULL
   )
-plot(df.rap$pd, df.rap$pd_temp)
-abline(a = 0, b = 1)
+
+
+# plot(df.rap$pd, df.rap$pd_temp)
+# abline(a = 0, b = 1)
 
 # rename so that the new pd is just 'pd'
 df.rap <- rename(df.rap, pd_old = pd, pd = pd_new)
-write.csv(df.rap, 'temp.csv')
-file.show('temp.csv')
+
+wd <- "C:/Box Sync/Risk Appetite - Provisioning Project/Working Folders for RAP Modules/Risk Profile/PD Model/2.Model Selection"
+write.csv(df.rap, 'pds_08.19.16.csv', row.names = FALSE)
+file.show('pds_08.19.16.csv')
 names(df.rap)
 
 # Client Max /Min	 	WC / Sales 	 	Industry 	 	 
