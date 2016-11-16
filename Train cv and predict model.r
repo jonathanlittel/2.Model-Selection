@@ -199,6 +199,41 @@ df.rap.inactive$sales_growth_pct_rank_sq <- log(df.rap.inactive$sales_growth_pct
 
    pd <- predict(glm.mod.all.train, df.train, type="prob")[,2]
    roc_train<- roc(df.train$WO, pd)
+
+
+#--------------------------------------------------------
+# RUN ON TEST DATA SET - OLD MODEL
+#--------
+
+   df.train.model.rr <- df.train[,names(df.train) %in% modelColsrr]
+   df.train.model.rr <- df.train.model.rr[complete.cases(df.train.model.rr),]
+      tc <- trainControl("cv",
+            number=5, 
+            savePred=TRUE,
+            classProbs = TRUE,
+            summaryFunction = twoClassSummary)
+   # train_control <- trainControl(method="repeatedcv", number=5, repeats=2)
+      set.seed(1348)
+      glm.mod.all.train.rr <- train(WO ~ .   ,
+         data = df.train.model.rr,
+         method='glm',
+         trControl=tc,
+         metric = "ROC",
+         family='binomial') 
+
+  # recode one NA risk rating in test set
+  df.test$RiskRating[is.na(df.test$RiskRating)] <- mean(df.test$RiskRating, na.rm = T)
+
+   pd_rr_test <- predict(glm.mod.all.train.rr, df.test, type="prob")[,2]
+   roc_test<- roc(df.test$WO, pd_rr_test)
+   df.test$predWO_cut <- as.factor(ifelse(pd_rr_test>cutoff,"Writeoff", "Non_Writeoff"))
+   confusionMatrix(df.test$predWO_cut, df.test$WO)
+   summary(glm.mod.all.train.rr$pred)
+   glm.mod.all.train.rr$results$ROC  # print the cv AUC
+
+   pd_rr_train <- predict(glm.mod.all.train.rr, df.train, type="prob")[,2]
+   roc_test_rr <- roc(df.test$WO, pd_rr_test)
+
 #--------------------------------------------------------
 # SAVE OUTPUT
 #--------
